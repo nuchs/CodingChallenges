@@ -1,4 +1,5 @@
-// Code Challenge: Build a wc clone
+// Solution for CodingChallenge 1 - build a wc clone
+// https://codingchallenges.fyi/challenges/challenge-wc
 package main
 
 import (
