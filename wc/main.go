@@ -20,11 +20,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to open source for reading: %v", err)
 		os.Exit(2)
 	}
-	defer func() {
-		if err := rd.Close(); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to close source %+v: %s", spec, err)
-		}
-	}()
+	defer closeSource(spec, rd)
 
 	counts, err := Count(spec, rd)
 	if err != nil {
@@ -50,4 +46,10 @@ func openSource(spec *Spec) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("failed to open file %q: %w", spec.Source, err)
 	}
 	return f, nil
+}
+
+func closeSource(spec Spec, rd io.Closer) {
+	if err := rd.Close(); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to close source %+v: %s", spec, err)
+	}
 }
