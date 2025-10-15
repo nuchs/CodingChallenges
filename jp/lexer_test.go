@@ -17,22 +17,22 @@ func TestStringTokens(t *testing.T) {
 		{
 			desc: "Empty string",
 			data: "\"\"",
-			want: jp.Token{jp.STRING, ""},
+			want: jp.NewTokenFromString(jp.STRING, "", 1, 2),
 		},
 		{
 			desc: "String",
 			data: "\"bacon egg\"",
-			want: jp.Token{jp.STRING, "bacon egg"},
+			want: jp.NewTokenFromString(jp.STRING, "bacon egg", 1, 11),
 		},
 		{
 			desc: "Special characters",
 			data: "\"{}[]():null true false\"",
-			want: jp.Token{jp.STRING, "{}[]():null true false"},
+			want: jp.NewTokenFromString(jp.STRING, "{}[]():null true false", 1, 24),
 		},
 		{
 			desc: "Quotes",
 			data: "\"\\\"arrgh\\\"\"",
-			want: jp.Token{jp.STRING, "\\\"arrgh\\\""},
+			want: jp.NewTokenFromString(jp.STRING, "\\\"arrgh\\\"", 1, 11),
 		},
 	}
 	for _, tC := range testCases {
@@ -55,57 +55,57 @@ func TestNumberTokens(t *testing.T) {
 		{
 			desc: "zero",
 			data: "0",
-			want: jp.Token{jp.NUM, "0"},
+			want: jp.NewTokenFromString(jp.NUM, "0", 1, 1),
 		},
 		{
 			desc: "Positive int",
 			data: "123",
-			want: jp.Token{jp.NUM, "123"},
+			want: jp.NewTokenFromString(jp.NUM, "123", 1, 3),
 		},
 		{
 			desc: "Negative int",
 			data: "-123",
-			want: jp.Token{jp.NUM, "-123"},
+			want: jp.NewTokenFromString(jp.NUM, "-123", 1, 4),
 		},
 		{
 			desc: "Positive small float",
 			data: "0.456",
-			want: jp.Token{jp.NUM, "0.456"},
+			want: jp.NewTokenFromString(jp.NUM, "0.456", 1, 5),
 		},
 		{
 			desc: "Negative small float",
 			data: "-0.78901",
-			want: jp.Token{jp.NUM, "-0.78901"},
+			want: jp.NewTokenFromString(jp.NUM, "-0.78901", 1, 8),
 		},
 		{
 			desc: "Positive big float",
 			data: "123.456",
-			want: jp.Token{jp.NUM, "123.456"},
+			want: jp.NewTokenFromString(jp.NUM, "123.456", 1, 7),
 		},
 		{
 			desc: "Negative big float",
 			data: "-999.78901",
-			want: jp.Token{jp.NUM, "-999.78901"},
+			want: jp.NewTokenFromString(jp.NUM, "-999.78901", 1, 10),
 		},
 		{
 			desc: "Big positive e",
 			data: "2E+2",
-			want: jp.Token{jp.NUM, "2E+2"},
+			want: jp.NewTokenFromString(jp.NUM, "2E+2", 1, 4),
 		},
 		{
 			desc: "Small positive e",
 			data: "2e+2",
-			want: jp.Token{jp.NUM, "2e+2"},
+			want: jp.NewTokenFromString(jp.NUM, "2e+2", 1, 4),
 		},
 		{
 			desc: "Big negative e",
 			data: "2E-2",
-			want: jp.Token{jp.NUM, "2E-2"},
+			want: jp.NewTokenFromString(jp.NUM, "2E-2", 1, 4),
 		},
 		{
 			desc: "Small negative e",
 			data: "2e-2",
-			want: jp.Token{jp.NUM, "2e-2"},
+			want: jp.NewTokenFromString(jp.NUM, "2e-2", 1, 4),
 		},
 	}
 	for _, tC := range testCases {
@@ -202,6 +202,7 @@ func TestSimpleTokens(t *testing.T) {
 		{desc: "Open bracket", data: "[", want: []jp.TokenType{jp.LBRCKT, jp.EOF}},
 		{desc: "Close bracket", data: "]", want: []jp.TokenType{jp.RBRCKT, jp.EOF}},
 		{desc: "Colon", data: ":", want: []jp.TokenType{jp.COLON, jp.EOF}},
+		{desc: "Comma", data: ",", want: []jp.TokenType{jp.COMMA, jp.EOF}},
 		{desc: "Null", data: "null", want: []jp.TokenType{jp.NULL, jp.EOF}},
 		{desc: "True", data: "true", want: []jp.TokenType{jp.TRUE, jp.EOF}},
 		{desc: "False", data: "false", want: []jp.TokenType{jp.FALSE, jp.EOF}},

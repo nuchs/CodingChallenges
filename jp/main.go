@@ -12,12 +12,18 @@ import (
 func main() {
 	src, err := openSource()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to load json: %s", err)
+		fmt.Fprintf(os.Stderr, "Failed to load json: %s\n", err)
 		os.Exit(1)
 	}
 	defer closeSource(src)
 
-	_ = NewLexer(src)
+	p := NewParser(src)
+	if err := p.Parse(); err != nil {
+		fmt.Printf("Bad JSON: %s\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Good JSON")
 }
 
 func openSource() (io.ReadCloser, error) {
@@ -40,8 +46,8 @@ func openSource() (io.ReadCloser, error) {
 	return f, nil
 }
 
-func closeSource(source io.Closer) {
-	if err := source.Close(); err != nil {
+func closeSource(src io.Closer) {
+	if err := src.Close(); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to close json source: %s", err)
 	}
 }

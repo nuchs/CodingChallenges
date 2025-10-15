@@ -1,10 +1,13 @@
 package main
 
+import "fmt"
+
 type TokenType string
 
 type Token struct {
-	Type    TokenType
-	Literal string
+	Type     TokenType
+	Literal  string
+	row, col int
 }
 
 const (
@@ -15,6 +18,7 @@ const (
 	LBRCKT = "["
 	RBRCKT = "]"
 	COLON  = ":"
+	COMMA  = ","
 
 	IDENT  = "IDENT"
 	STRING = "STRING"
@@ -27,12 +31,16 @@ const (
 	ILLEGAL = "ILLEGAL"
 )
 
-func newTokenFromRune(tt TokenType, r rune) Token {
-	return Token{tt, string(r)}
+func NewTokenFromRune(tt TokenType, r rune, row, col int) Token {
+	return Token{Type: tt, Literal: string(r), row: row, col: col}
 }
 
-func newTokenFromString(tt TokenType, s string) Token {
-	return Token{tt, s}
+func NewTokenFromString(tt TokenType, s string, row, col int) Token {
+	return Token{Type: tt, Literal: s, row: row, col: col}
+}
+
+func (t Token) String() string {
+	return fmt.Sprintf("%s(%d, %d) - %q", t.Type, t.row, t.col, t.Literal)
 }
 
 var keywords = map[string]TokenType{
