@@ -57,18 +57,37 @@ func (lx *Lexer) NextToken() Token {
 	case ',':
 		tok = NewTokenFromRune(COMMA, lx.c, lx.row, lx.col)
 	case '"':
-		lx.readRune()
-		tok = NewTokenFromString(STRING, lx.readString(), lx.row, lx.col)
+		str, err := lx.readString()
+		if err != nil {
+			tok = NewTokenFromString(
+				ILLEGAL,
+				fmt.Sprintf("bad string: %s", err),
+				lx.row,
+				lx.col,
+			)
+			break
+		}
+		tok = NewTokenFromString(STRING, str, lx.row, lx.col)
+	case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+		num, err := lx.readNumber()
+		if err != nil {
+			tok = NewTokenFromString(
+				ILLEGAL,
+				fmt.Sprintf("bad number: %s", err),
+				lx.row,
+				lx.col,
+			)
+			break
+		}
+		tok = NewTokenFromString(NUM, num, lx.row, lx.col)
 	default:
 		if unicode.IsLetter(lx.c) || lx.c == '_' {
 			ident := lx.readIdentifier()
 			tok = NewTokenFromString(lookupIdentifier(ident), ident, lx.row, lx.col)
-		} else if num, err := lx.readNumber(); err == nil {
-			tok = NewTokenFromString(NUM, num, lx.row, lx.col)
 		} else {
 			tok = NewTokenFromString(
 				ILLEGAL,
-				fmt.Sprintf("unrecognised token: %v", err),
+				fmt.Sprintf("unrecognised token: %v", string(lx.c)),
 				lx.row,
 				lx.col,
 			)
@@ -105,15 +124,11 @@ func (lx *Lexer) readNumber() (string, error) {
 	if err := lx.readIntegralPart(&buf); err != nil {
 		return "", err
 	}
-	if lx.c == '.' {
-		if err := lx.readFractionalPart(&buf); err != nil {
-			return "", err
-		}
+	if err := lx.readFractionalPart(&buf); err != nil {
+		return "", err
 	}
-	if lx.c == 'e' || lx.c == 'E' {
-		if err := lx.readExponent(&buf); err != nil {
-			return "", err
-		}
+	if err := lx.readExponent(&buf); err != nil {
+		return "", err
 	}
 
 	return buf.String(), nil
@@ -123,13 +138,15 @@ func (lx *Lexer) readIntegralPart(buf *strings.Builder) error {
 	if lx.c == '-' {
 		next, err := lx.src.Peek(1)
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return errors.New("truncated integral part")
+			}
 			return fmt.Errorf("readNumber - failed to peek after '-': %w", err)
 		}
 		if !unicode.IsDigit(rune(next[0])) {
 			return fmt.Errorf("'-' must be followed by a digit")
 		}
 		buf.WriteRune(lx.c)
-		lx.readRune()
 	}
 
 	lx.readDigits(buf)
@@ -137,22 +154,31 @@ func (lx *Lexer) readIntegralPart(buf *strings.Builder) error {
 }
 
 func (lx *Lexer) readFractionalPart(buf *strings.Builder) error {
-	next, err := lx.src.Peek(1)
+	next, err := lx.src.Peek(2)
+	if len(next) == 0 || next[0] != '.' {
+		return nil
+	}
 	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return errors.New("truncated fractional part")
+		}
 		return fmt.Errorf("readNumber - failed to peek after '.': %w", err)
 	}
-	if !unicode.IsDigit(rune(next[0])) {
+	if !unicode.IsDigit(rune(next[1])) {
 		return fmt.Errorf("'.' must be followed by a digit")
 	}
-	buf.WriteRune(lx.c)
 	lx.readRune()
+	buf.WriteRune(lx.c)
 	lx.readDigits(buf)
 
 	return nil
 }
 
 func (lx *Lexer) readExponent(buf *strings.Builder) error {
-	next, err := lx.src.Peek(2)
+	next, err := lx.src.Peek(3)
+	if len(next) == 0 || (next[0] != 'e' && next[0] != 'E') {
+		return nil
+	}
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return errors.New("truncated exponent")
@@ -163,40 +189,49 @@ func (lx *Lexer) readExponent(buf *strings.Builder) error {
 			err,
 		)
 	}
-	sign, value := rune(next[0]), rune(next[1])
+	sign, value := rune(next[1]), rune(next[2])
 	if sign != '+' && sign != '-' {
 		return errors.New("exponent must be followed by a sign")
 	}
 	if !unicode.IsDigit(value) {
 		return errors.New("exponent must have a value")
 	}
-	buf.WriteRune(lx.c)
 	lx.readRune()
 	buf.WriteRune(lx.c)
 	lx.readRune()
+	buf.WriteRune(lx.c)
 	lx.readDigits(buf)
 
 	return nil
 }
 
 func (lx *Lexer) readDigits(buf *strings.Builder) {
-	for unicode.IsDigit(lx.c) {
+	if unicode.IsDigit(lx.c) {
 		buf.WriteRune(lx.c)
+	}
+	next, err := lx.src.Peek(1)
+	for !errors.Is(err, io.EOF) && unicode.IsDigit(rune(next[0])) {
 		lx.readRune()
+		buf.WriteRune(lx.c)
+		next, err = lx.src.Peek(1)
 	}
 }
 
-func (lx *Lexer) readString() string {
+func (lx *Lexer) readString() (string, error) {
+	lx.readRune()
 	var buf strings.Builder
 	esc := false
 
 	for esc || lx.c != '"' {
+		if lx.err != nil {
+			return "", errors.New("unterminated string")
+		}
 		buf.WriteRune(lx.c)
 		esc = !esc && lx.c == '\\'
 		lx.readRune()
 	}
 
-	return buf.String()
+	return buf.String(), nil
 }
 
 func (lx *Lexer) readIdentifier() string {

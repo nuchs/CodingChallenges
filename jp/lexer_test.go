@@ -126,14 +126,33 @@ func TestBadTokens(t *testing.T) {
 		err  string
 	}{
 		{
-			desc: "dash",
+			data: "-",
+			err:  "truncated integral part",
+		},
+		{
+			desc: "truncated dash",
+			data: "-",
+			err:  "truncated integral part",
+		},
+		{
+			desc: "dash non number",
 			data: "-a",
 			err:  "'-' must be followed by a digit",
 		},
 		{
 			desc: "dot",
-			data: ".a",
+			data: "0.a",
 			err:  "'.' must be followed by a digit",
+		},
+		{
+			desc: "bare dot",
+			data: ".1",
+			err:  "unrecognised token: .",
+		},
+		{
+			desc: "truncated dot",
+			data: "1.",
+			err:  "truncated fractional part",
 		},
 		{
 			desc: "e",
@@ -175,6 +194,11 @@ func TestBadTokens(t *testing.T) {
 			data: "1E+z",
 			err:  "exponent must have a value",
 		},
+		{
+			desc: "Unterminated string",
+			data: "\"blah",
+			err:  "unterminated string",
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
@@ -197,6 +221,7 @@ func TestSimpleTokens(t *testing.T) {
 		want []jp.TokenType
 	}{
 		{desc: "empty", data: "", want: []jp.TokenType{jp.EOF}},
+		{desc: "Identifier", data: "bob", want: []jp.TokenType{jp.IDENT, jp.EOF}},
 		{desc: "Open brace", data: "{", want: []jp.TokenType{jp.LBRACE, jp.EOF}},
 		{desc: "Close brace", data: "}", want: []jp.TokenType{jp.RBRACE, jp.EOF}},
 		{desc: "Open bracket", data: "[", want: []jp.TokenType{jp.LBRCKT, jp.EOF}},
