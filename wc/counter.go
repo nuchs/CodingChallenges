@@ -15,33 +15,36 @@ type Counts struct {
 	Lines int
 }
 
-func (c *Counts) Format(spec Spec) string {
+func (c *Counts) Format(spec Spec, src string) string {
 	var b strings.Builder
-	b.WriteString(" ")
 	if spec.Lines {
-		fmt.Fprintf(&b, " %v", c.Lines)
+		fmt.Fprintf(&b, "%6d", c.Lines)
 	}
 	if spec.Words {
-		fmt.Fprintf(&b, " %v", c.Words)
+		fmt.Fprintf(&b, "%6d", c.Words)
 	}
 	if spec.MultiByte {
-		fmt.Fprintf(&b, " %v", c.Runes)
+		fmt.Fprintf(&b, "%6d", c.Runes)
 	}
 	if spec.Bytes {
-		fmt.Fprintf(&b, " %v", c.Bytes)
+		fmt.Fprintf(&b, "%6d", c.Bytes)
 	}
+	fmt.Fprintf(&b, " %s", src)
 
 	return b.String()
 }
 
 func (c *Counts) update(s string) {
-	c.Bytes += len(s)
+	length := len(s)
+	c.Bytes += length
 	c.Runes += utf8.RuneCountInString(s)
 	c.Words += len(strings.Fields(s))
-	c.Lines++
+	if length > 0 && s[length-1] == '\n' {
+		c.Lines++
+	}
 }
 
-func Count(_ Spec, file io.Reader) (Counts, error) {
+func Count(file io.Reader) (Counts, error) {
 	var counts Counts
 
 	rd := bufio.NewReader(file)

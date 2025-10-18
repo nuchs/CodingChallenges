@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"reflect"
 	"testing"
 
 	wc "github.com/nuchs/ccwc"
@@ -21,39 +22,44 @@ func TestFlags(t *testing.T) {
 	}{
 		{
 			desc: "count characters",
-			args: []string{"-c", "file"},
-			want: wc.Spec{Source: "file", Bytes: true},
+			args: []string{"-c"},
+			want: wc.Spec{Sources: []string{"stdin"}, Bytes: true},
 		},
 		{
 			desc: "count runes",
-			args: []string{"-m", "file"},
-			want: wc.Spec{Source: "file", MultiByte: true},
+			args: []string{"-m"},
+			want: wc.Spec{Sources: []string{"stdin"}, MultiByte: true},
 		},
 		{
 			desc: "count words",
-			args: []string{"-w", "file"},
-			want: wc.Spec{Source: "file", Words: true},
+			args: []string{"-w"},
+			want: wc.Spec{Sources: []string{"stdin"}, Words: true},
 		},
 		{
 			desc: "count lines",
-			args: []string{"-l", "file"},
-			want: wc.Spec{Source: "file", Lines: true},
+			args: []string{"-l"},
+			want: wc.Spec{Sources: []string{"stdin"}, Lines: true},
+		},
+		{
+			desc: "multi file",
+			args: []string{"-l", "file1", "file2", "file3"},
+			want: wc.Spec{Sources: []string{"file1", "file2", "file3"}, Lines: true},
 		},
 		{
 			desc: "implicit settings",
-			args: []string{"file"},
+			args: []string{},
 			want: wc.Spec{
-				Source: "file",
-				Bytes:  true,
-				Words:  true,
-				Lines:  true,
+				Sources: []string{"stdin"},
+				Bytes:   true,
+				Words:   true,
+				Lines:   true,
 			},
 		},
 		{
 			desc: "Explicitly everything",
-			args: []string{"-c", "-m", "-w", "-l", "file"},
+			args: []string{"-c", "-m", "-w", "-l", "file1", "file2"},
 			want: wc.Spec{
-				Source:    "file",
+				Sources:   []string{"file1", "file2"},
 				Bytes:     true,
 				MultiByte: true,
 				Words:     true,
@@ -67,7 +73,7 @@ func TestFlags(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Unexpected error loading spec: %s", err)
 			}
-			if got != tC.want {
+			if !reflect.DeepEqual(got, tC.want) {
 				t.Fatalf("Bad spec: got:%+v, want:%+v", got, tC.want)
 			}
 		})
