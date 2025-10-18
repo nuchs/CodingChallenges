@@ -15,41 +15,37 @@ func main() {
 		os.Exit(1)
 	}
 
+	res := NewResults(len(spec.Sources))
 	for _, src := range spec.Sources {
-		if err := countSrc(spec, src); err != nil {
+		count, err := countSrc(src)
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to count source %q: %v", src, err)
 			os.Exit(2)
 		}
+		res.Add(count)
 	}
+
+	res.Print(spec)
 }
 
-func countSrc(spec Spec, src string) error {
-	rd, err := openSource(src)
-	if err != nil {
-		return err
+func countSrc(src string) (Counts, error) {
+	var empty Counts
+	rd := os.Stdin
+	if src != "stdin" {
+		f, err := os.Open(src)
+		if err != nil {
+			return empty, fmt.Errorf("failed to open source for reading: %w", err)
+		}
+		rd = f
 	}
 	defer closeSource(src, rd)
 
-	counts, err := Count(rd)
+	counts, err := Count(rd, src)
 	if err != nil {
-		return err
+		return empty, err
 	}
 
-	fmt.Println(counts.Format(spec, src))
-
-	return nil
-}
-
-func openSource(src string) (io.ReadCloser, error) {
-	if src == "stdin" {
-		return os.Stdin, nil
-	}
-
-	f, err := os.Open(src)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open source for reading: %w", err)
-	}
-	return f, nil
+	return counts, nil
 }
 
 func closeSource(src string, rd io.Closer) {

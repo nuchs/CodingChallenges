@@ -13,23 +13,24 @@ type Counts struct {
 	Runes int
 	Words int
 	Lines int
+	Src   string
 }
 
-func (c *Counts) Format(spec Spec, src string) string {
+func (c *Counts) Format(spec Spec, fw FieldWidths) string {
 	var b strings.Builder
 	if spec.Lines {
-		fmt.Fprintf(&b, "%6d", c.Lines)
+		fmt.Fprintf(&b, "%*d", fw.Line, c.Lines)
 	}
 	if spec.Words {
-		fmt.Fprintf(&b, "%6d", c.Words)
+		fmt.Fprintf(&b, "%*d", fw.Word, c.Words)
 	}
 	if spec.MultiByte {
-		fmt.Fprintf(&b, "%6d", c.Runes)
+		fmt.Fprintf(&b, "%*d", fw.Rune, c.Runes)
 	}
 	if spec.Bytes {
-		fmt.Fprintf(&b, "%6d", c.Bytes)
+		fmt.Fprintf(&b, "%*d", fw.Byte, c.Bytes)
 	}
-	fmt.Fprintf(&b, " %s", src)
+	fmt.Fprintf(&b, " %s", c.Src)
 
 	return b.String()
 }
@@ -44,8 +45,8 @@ func (c *Counts) update(s string) {
 	}
 }
 
-func Count(file io.Reader) (Counts, error) {
-	var counts Counts
+func Count(file io.Reader, src string) (Counts, error) {
+	counts := Counts{Src: src}
 
 	rd := bufio.NewReader(file)
 	for {

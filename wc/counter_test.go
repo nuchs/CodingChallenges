@@ -26,7 +26,7 @@ func TestBytes(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			got, err := wc.Count(strings.NewReader(tC.file))
+			got, err := wc.Count(strings.NewReader(tC.file), "stub")
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -51,7 +51,7 @@ func TestRunes(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			got, err := wc.Count(strings.NewReader(tC.file))
+			got, err := wc.Count(strings.NewReader(tC.file), "stub")
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -86,7 +86,7 @@ func TestWords(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			got, err := wc.Count(strings.NewReader(tC.file))
+			got, err := wc.Count(strings.NewReader(tC.file), "stub")
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -112,7 +112,7 @@ func TestLines(t *testing.T) {
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			got, err := wc.Count(strings.NewReader(tC.file))
+			got, err := wc.Count(strings.NewReader(tC.file), "stub")
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
