@@ -12,11 +12,18 @@ type Parser struct {
 }
 
 func NewParser(src io.Reader) Parser {
-	lx := NewLexer(src)
-	return Parser{
-		lx:  lx,
-		tok: lx.NextToken(),
+	return NewDebugParser(src, false)
+}
+
+func NewDebugParser(src io.Reader, dbg bool) Parser {
+	p := Parser{
+		lx:    NewLexer(src),
+		debug: dbg,
 	}
+
+	p.readToken()
+
+	return p
 }
 
 func (p *Parser) Parse() error {
@@ -25,7 +32,7 @@ func (p *Parser) Parse() error {
 	}
 
 	if p.tok.Type != EOF {
-		return fmt.Errorf("additional top level token: %q", p.tok)
+		return fmt.Errorf("additional top level token: %s", p.tok)
 	}
 
 	return nil
@@ -33,28 +40,33 @@ func (p *Parser) Parse() error {
 
 func (p *Parser) readToken() {
 	p.tok = p.lx.NextToken()
+	p.log(p.tok.String())
+}
+
+func (p *Parser) log(msg string) {
 	if p.debug {
-		fmt.Println(p.tok)
+		fmt.Println(msg)
 	}
 }
 
 func (p *Parser) parseExpression() error {
+	var err error
 	switch p.tok.Type {
 	case LBRACE:
-		return p.parseObject()
+		err = p.parseObject()
 	case LBRCKT:
-		return p.parseArray()
+		err = p.parseArray()
 	case NULL:
 	case STRING:
 	case NUM:
 	case TRUE, FALSE:
 	default:
-		return fmt.Errorf("invalid expression, unexpected token: %q", p.tok)
+		return fmt.Errorf("invalid expression, unexpected token: %s", p.tok)
 	}
 
 	p.readToken()
 
-	return nil
+	return err
 }
 
 func (p *Parser) parseArray() error {
@@ -88,14 +100,14 @@ func (p *Parser) parseObject() error {
 
 	err := p.readKV()
 	if err != nil {
-		return fmt.Errorf("failed to rad object kv: %w", err)
+		return fmt.Errorf("failed to read object key/value: %w", err)
 	}
 
 	for p.tok.Type == COMMA {
 		p.readToken()
 		err := p.readKV()
 		if err != nil {
-			return fmt.Errorf("failed to rad object kv: %w", err)
+			return fmt.Errorf("failed to read object key/value: %w", err)
 		}
 	}
 
@@ -103,8 +115,8 @@ func (p *Parser) parseObject() error {
 }
 
 func (p *Parser) readKV() error {
-	if p.tok.Type != IDENT {
-		return fmt.Errorf("expected identifier in object found %s", p.tok)
+	if p.tok.Type != STRING {
+		return fmt.Errorf("expected key string in object found %s", p.tok)
 	}
 	p.readToken()
 	if p.tok.Type != COLON {

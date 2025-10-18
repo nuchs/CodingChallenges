@@ -40,7 +40,11 @@ func NewTokenFromString(tt TokenType, s string, row, col int) Token {
 }
 
 func (t Token) String() string {
-	return fmt.Sprintf("%s(%d, %d) - %q", t.Type, t.row, t.col, t.Literal)
+	lit := ""
+	if string(t.Type) != t.Literal {
+		lit = fmt.Sprintf("(%s)", t.Literal)
+	}
+	return fmt.Sprintf("Line %d: %s\t%s", t.row, t.Type, lit)
 }
 
 var keywords = map[string]TokenType{

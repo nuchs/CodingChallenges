@@ -236,10 +236,13 @@ func (lx *Lexer) readString() (string, error) {
 
 func (lx *Lexer) readIdentifier() string {
 	var buf strings.Builder
+	buf.WriteRune(lx.c)
 
-	for unicode.IsLetter(lx.c) || lx.c == '_' || unicode.IsDigit(lx.c) {
-		buf.WriteRune(lx.c)
+	next, err := lx.src.Peek(1)
+	for !errors.Is(err, io.EOF) && unicode.IsLetter(rune(next[0])) || lx.c == '_' || unicode.IsDigit(lx.c) {
 		lx.readRune()
+		buf.WriteRune(lx.c)
+		next, err = lx.src.Peek(1)
 	}
 
 	return buf.String()
