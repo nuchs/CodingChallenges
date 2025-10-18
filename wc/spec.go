@@ -11,7 +11,7 @@ type Spec struct {
 	MultiByte bool
 	Words     bool
 	Lines     bool
-	Source    string
+	Sources   []string
 }
 
 func LoadSpec(args []string) (Spec, error) {
@@ -60,9 +60,10 @@ func LoadSpec(args []string) (Spec, error) {
 		spec.Lines = true
 	}
 
+	spec.Sources = []string{"stdin"}
 	tail := parser.Args()
 	if len(tail) >= 1 {
-		spec.Source = tail[0]
+		spec.Sources = tail
 	}
 
 	return spec, nil

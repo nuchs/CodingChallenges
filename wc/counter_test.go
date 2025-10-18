@@ -8,7 +8,6 @@ import (
 )
 
 func TestBytes(t *testing.T) {
-	spec := wc.Spec{Bytes: true}
 	testCases := []struct {
 		desc string
 		file string
@@ -27,7 +26,7 @@ func TestBytes(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			got, err := wc.Count(spec, strings.NewReader(tC.file))
+			got, err := wc.Count(strings.NewReader(tC.file), "stub")
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -39,7 +38,6 @@ func TestBytes(t *testing.T) {
 }
 
 func TestRunes(t *testing.T) {
-	spec := wc.Spec{MultiByte: true}
 	testCases := []struct {
 		desc string
 		file string
@@ -53,7 +51,7 @@ func TestRunes(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			got, err := wc.Count(spec, strings.NewReader(tC.file))
+			got, err := wc.Count(strings.NewReader(tC.file), "stub")
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -65,7 +63,6 @@ func TestRunes(t *testing.T) {
 }
 
 func TestWords(t *testing.T) {
-	spec := wc.Spec{Words: true}
 	testCases := []struct {
 		desc string
 		file string
@@ -89,7 +86,7 @@ func TestWords(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			got, err := wc.Count(spec, strings.NewReader(tC.file))
+			got, err := wc.Count(strings.NewReader(tC.file), "stub")
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -101,7 +98,6 @@ func TestWords(t *testing.T) {
 }
 
 func TestLines(t *testing.T) {
-	spec := wc.Spec{Lines: true}
 	testCases := []struct {
 		desc string
 		file string
@@ -110,13 +106,13 @@ func TestLines(t *testing.T) {
 		{desc: "Empty", file: "", want: 0},
 		{desc: "one line", file: "hello\n", want: 1},
 		{desc: "multiple lines", file: "hello\ncruel\nworld\n", want: 3},
-		{desc: "no trailing newline", file: "I'm still here", want: 1},
+		{desc: "no trailing newline", file: "I'm still here", want: 0},
 		{desc: "blanklines", file: "\n\n\n\n", want: 4},
 	}
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			got, err := wc.Count(spec, strings.NewReader(tC.file))
+			got, err := wc.Count(strings.NewReader(tC.file), "stub")
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
