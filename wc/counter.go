@@ -30,7 +30,9 @@ func (c *Counts) Format(spec Spec, fw FieldWidths) string {
 	if spec.Bytes {
 		fmt.Fprintf(&b, "%*d", fw.Byte, c.Bytes)
 	}
-	fmt.Fprintf(&b, " %s", c.Src)
+	if c.Src != "stdin" {
+		fmt.Fprintf(&b, " %s", c.Src)
+	}
 
 	return b.String()
 }

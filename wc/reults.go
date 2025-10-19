@@ -5,7 +5,7 @@ import (
 	"math"
 )
 
-const DefaultWidth = 6
+const DefaultWidth = 7
 
 type Results struct {
 	fw     FieldWidths
@@ -65,5 +65,8 @@ func (r *Results) Print(spec Spec) {
 }
 
 func digitCount(num int) int {
+	if num == 0 {
+		return 1
+	}
 	return int(math.Log10(float64(num))) + 1
 }
