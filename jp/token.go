@@ -5,9 +5,9 @@ import "fmt"
 type TokenType string
 
 type Token struct {
-	Type     TokenType
-	Literal  string
-	row, col int
+	Type    TokenType
+	Literal string
+	line    int
 }
 
 const (
@@ -31,12 +31,12 @@ const (
 	ILLEGAL = "ILLEGAL"
 )
 
-func NewTokenFromRune(tt TokenType, r rune, row, col int) Token {
-	return Token{Type: tt, Literal: string(r), row: row, col: col}
+func NewTokenFromRune(tt TokenType, r rune, line int) Token {
+	return Token{Type: tt, Literal: string(r), line: line}
 }
 
-func NewTokenFromString(tt TokenType, s string, row, col int) Token {
-	return Token{Type: tt, Literal: s, row: row, col: col}
+func NewTokenFromString(tt TokenType, s string, line int) Token {
+	return Token{Type: tt, Literal: s, line: line}
 }
 
 func (t Token) String() string {
@@ -44,7 +44,7 @@ func (t Token) String() string {
 	if string(t.Type) != t.Literal {
 		lit = fmt.Sprintf("(%s)", t.Literal)
 	}
-	return fmt.Sprintf("Line %d: %s\t%s", t.row, t.Type, lit)
+	return fmt.Sprintf("Line %d: %s\t%s", t.line, t.Type, lit)
 }
 
 var keywords = map[string]TokenType{

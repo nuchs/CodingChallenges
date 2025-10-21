@@ -111,6 +111,10 @@ func (p *Parser) parseObject() error {
 		}
 	}
 
+	if p.tok.Type != RBRACE {
+		return fmt.Errorf("malformed object, expected '}', got '%s'", p.tok)
+	}
+
 	return nil
 }
 

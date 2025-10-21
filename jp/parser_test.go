@@ -43,9 +43,64 @@ func TestParseArray(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			p := jp.NewDebugParser(strings.NewReader(tC.data), true)
+			p := jp.NewParser(strings.NewReader(tC.data))
 			if err := p.Parse(); err != nil {
 				t.Fatalf("Unexpected parse error: %v", err)
+			}
+		})
+	}
+}
+
+func TestParseObject(t *testing.T) {
+	testCases := []struct {
+		desc string
+		data string
+	}{
+		{desc: "empty object", data: "{}"},
+		{desc: "single key", data: `{"key":"value"}`},
+		{desc: "subarrary", data: `{"key":[1, 2, 3]}`},
+		{desc: "subobject", data: `{"k1":{ "k2": {} }}`},
+		{
+			desc: "multi key",
+			data: `{"a":"v", "b":1, "c":true, "d":null, "e":false}`,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			p := jp.NewParser(strings.NewReader(tC.data))
+			if err := p.Parse(); err != nil {
+				t.Fatalf("Unexpected parse error: %v", err)
+			}
+		})
+	}
+}
+
+func TestBadJson(t *testing.T) {
+	testCases := []struct {
+		desc string
+		data string
+		err  string
+	}{
+		{
+			desc: "Unterminated array",
+			data: "[1,2",
+			err:  "Parse failure: malformed array, expected ']'",
+		},
+		{
+			desc: "Unterminated object",
+			data: `{ "k":"v" `,
+			err:  "Parse failure: malformed object, expected '}'",
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			p := jp.NewParser(strings.NewReader(tC.data))
+			err := p.Parse()
+			if err == nil {
+				t.Fatalf("Got no error, wanted: %s", err)
+			}
+			if !strings.HasPrefix(err.Error(), tC.err) {
+				t.Fatalf("Wrong error, got '%s', want '%s'", err, tC.err)
 			}
 		})
 	}

@@ -17,22 +17,22 @@ func TestStringTokens(t *testing.T) {
 		{
 			desc: "Empty string",
 			data: "\"\"",
-			want: jp.NewTokenFromString(jp.STRING, "", 1, 2),
+			want: jp.NewTokenFromString(jp.STRING, "", 1),
 		},
 		{
 			desc: "String",
 			data: "\"bacon egg\"",
-			want: jp.NewTokenFromString(jp.STRING, "bacon egg", 1, 11),
+			want: jp.NewTokenFromString(jp.STRING, "bacon egg", 1),
 		},
 		{
 			desc: "Special characters",
 			data: "\"{}[]():null true false\"",
-			want: jp.NewTokenFromString(jp.STRING, "{}[]():null true false", 1, 24),
+			want: jp.NewTokenFromString(jp.STRING, "{}[]():null true false", 1),
 		},
 		{
 			desc: "Quotes",
 			data: "\"\\\"arrgh\\\"\"",
-			want: jp.NewTokenFromString(jp.STRING, "\\\"arrgh\\\"", 1, 11),
+			want: jp.NewTokenFromString(jp.STRING, "\\\"arrgh\\\"", 1),
 		},
 	}
 	for _, tC := range testCases {
@@ -55,57 +55,67 @@ func TestNumberTokens(t *testing.T) {
 		{
 			desc: "zero",
 			data: "0",
-			want: jp.NewTokenFromString(jp.NUM, "0", 1, 1),
+			want: jp.NewTokenFromString(jp.NUM, "0", 1),
 		},
 		{
 			desc: "Positive int",
 			data: "123",
-			want: jp.NewTokenFromString(jp.NUM, "123", 1, 3),
+			want: jp.NewTokenFromString(jp.NUM, "123", 1),
 		},
 		{
 			desc: "Negative int",
 			data: "-123",
-			want: jp.NewTokenFromString(jp.NUM, "-123", 1, 4),
+			want: jp.NewTokenFromString(jp.NUM, "-123", 1),
 		},
 		{
 			desc: "Positive small float",
 			data: "0.456",
-			want: jp.NewTokenFromString(jp.NUM, "0.456", 1, 5),
+			want: jp.NewTokenFromString(jp.NUM, "0.456", 1),
 		},
 		{
 			desc: "Negative small float",
 			data: "-0.78901",
-			want: jp.NewTokenFromString(jp.NUM, "-0.78901", 1, 8),
+			want: jp.NewTokenFromString(jp.NUM, "-0.78901", 1),
 		},
 		{
 			desc: "Positive big float",
 			data: "123.456",
-			want: jp.NewTokenFromString(jp.NUM, "123.456", 1, 7),
+			want: jp.NewTokenFromString(jp.NUM, "123.456", 1),
 		},
 		{
 			desc: "Negative big float",
 			data: "-999.78901",
-			want: jp.NewTokenFromString(jp.NUM, "-999.78901", 1, 10),
+			want: jp.NewTokenFromString(jp.NUM, "-999.78901", 1),
+		},
+		{
+			desc: "Big e",
+			data: "2E23",
+			want: jp.NewTokenFromString(jp.NUM, "2E23", 1),
+		},
+		{
+			desc: "Small e",
+			data: "3e4",
+			want: jp.NewTokenFromString(jp.NUM, "3e4", 1),
 		},
 		{
 			desc: "Big positive e",
 			data: "2E+2",
-			want: jp.NewTokenFromString(jp.NUM, "2E+2", 1, 4),
+			want: jp.NewTokenFromString(jp.NUM, "2E+2", 1),
 		},
 		{
 			desc: "Small positive e",
 			data: "2e+2",
-			want: jp.NewTokenFromString(jp.NUM, "2e+2", 1, 4),
+			want: jp.NewTokenFromString(jp.NUM, "2e+2", 1),
 		},
 		{
 			desc: "Big negative e",
 			data: "2E-2",
-			want: jp.NewTokenFromString(jp.NUM, "2E-2", 1, 4),
+			want: jp.NewTokenFromString(jp.NUM, "2E-2", 1),
 		},
 		{
 			desc: "Small negative e",
 			data: "2e-2",
-			want: jp.NewTokenFromString(jp.NUM, "2e-2", 1, 4),
+			want: jp.NewTokenFromString(jp.NUM, "2e-2", 1),
 		},
 	}
 	for _, tC := range testCases {
@@ -126,8 +136,9 @@ func TestBadTokens(t *testing.T) {
 		err  string
 	}{
 		{
-			data: "-",
-			err:  "truncated integral part",
+			desc: "leading zero",
+			data: "0123",
+			err:  "numbers cannot lead with zero",
 		},
 		{
 			desc: "truncated dash",
@@ -140,7 +151,12 @@ func TestBadTokens(t *testing.T) {
 			err:  "'-' must be followed by a digit",
 		},
 		{
-			desc: "dot",
+			desc: "truncated dot",
+			data: "1.",
+			err:  "truncated fractional part",
+		},
+		{
+			desc: "dot non number",
 			data: "0.a",
 			err:  "'.' must be followed by a digit",
 		},
@@ -150,49 +166,34 @@ func TestBadTokens(t *testing.T) {
 			err:  "unrecognised token: .",
 		},
 		{
-			desc: "truncated dot",
-			data: "1.",
-			err:  "truncated fractional part",
-		},
-		{
-			desc: "e",
-			data: "1eaa",
-			err:  "exponent must be followed by a sign",
-		},
-		{
-			desc: "E",
-			data: "1E11",
-			err:  "exponent must be followed by a sign",
-		},
-		{
-			desc: "e too short",
+			desc: "truncated e",
 			data: "1e",
 			err:  "truncated exponent",
 		},
 		{
-			desc: "E too short",
-			data: "1E1",
+			desc: "truncated E",
+			data: "1E",
 			err:  "truncated exponent",
 		},
 		{
-			desc: "e-",
+			desc: "e- non number",
 			data: "1e-x",
-			err:  "exponent must have a value",
+			err:  "signed exponent must be followed by a digit",
 		},
 		{
-			desc: "e+",
+			desc: "e+ non number",
 			data: "1e+a",
-			err:  "exponent must have a value",
+			err:  "signed exponent must be followed by a digit",
 		},
 		{
-			desc: "E-",
+			desc: "E- non number",
 			data: "1E-b",
-			err:  "exponent must have a value",
+			err:  "signed exponent must be followed by a digit",
 		},
 		{
-			desc: "E+",
+			desc: "E+ non number",
 			data: "1E+z",
-			err:  "exponent must have a value",
+			err:  "signed exponent must be followed by a digit",
 		},
 		{
 			desc: "Unterminated string",
