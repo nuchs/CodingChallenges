@@ -30,9 +30,9 @@ func TestStringTokens(t *testing.T) {
 			want: jp.NewTokenFromString(jp.STRING, "{}[]():null true false", 1),
 		},
 		{
-			desc: "Quotes",
-			data: "\"\\\"arrgh\\\"\"",
-			want: jp.NewTokenFromString(jp.STRING, "\\\"arrgh\\\"", 1),
+			desc: "Escapes",
+			data: `"\"\b\f\r\n\t\/\\\u0123\uaAfF"`,
+			want: jp.NewTokenFromString(jp.STRING, `\"\b\f\r\n\t\/\\\u0123\uaAfF`, 1),
 		},
 	}
 	for _, tC := range testCases {
@@ -199,6 +199,26 @@ func TestBadTokens(t *testing.T) {
 			desc: "Unterminated string",
 			data: "\"blah",
 			err:  "unterminated string",
+		},
+		{
+			desc: "bad esc sequence",
+			data: `"what's the \q word?"`,
+			err:  `invalid escape sequence: \q`,
+		},
+		{
+			desc: "line break",
+			data: "\"blah\nblah\"",
+			err:  "control character 0xa in stream",
+		},
+		{
+			desc: "unicode too short",
+			data: `"\u111"`,
+			err:  "invalid unicode sequence",
+		},
+		{
+			desc: "unicode invalid",
+			data: `"\u1X23"`,
+			err:  "invalid unicode sequence",
 		},
 	}
 	for _, tC := range testCases {
