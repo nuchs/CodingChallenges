@@ -31,31 +31,30 @@ func (lx *Lexer) NextToken() Token {
 	lx.skipWhitespace()
 
 	if lx.err == io.EOF {
-		return NewTokenFromString(EOF, "", lx.row, lx.col)
+		return NewTokenFromString(EOF, "", lx.row)
 	}
 	if lx.err != nil {
 		return NewTokenFromString(
 			ILLEGAL,
 			fmt.Sprintf("bad token %q: %s", lx.c, lx.err),
 			lx.row,
-			lx.col,
 		)
 	}
 
 	var tok Token
 	switch lx.c {
 	case '{':
-		tok = NewTokenFromRune(LBRACE, lx.c, lx.row, lx.col)
+		tok = NewTokenFromRune(LBRACE, lx.c, lx.row)
 	case '}':
-		tok = NewTokenFromRune(RBRACE, lx.c, lx.row, lx.col)
+		tok = NewTokenFromRune(RBRACE, lx.c, lx.row)
 	case '[':
-		tok = NewTokenFromRune(LBRCKT, lx.c, lx.row, lx.col)
+		tok = NewTokenFromRune(LBRCKT, lx.c, lx.row)
 	case ']':
-		tok = NewTokenFromRune(RBRCKT, lx.c, lx.row, lx.col)
+		tok = NewTokenFromRune(RBRCKT, lx.c, lx.row)
 	case ':':
-		tok = NewTokenFromRune(COLON, lx.c, lx.row, lx.col)
+		tok = NewTokenFromRune(COLON, lx.c, lx.row)
 	case ',':
-		tok = NewTokenFromRune(COMMA, lx.c, lx.row, lx.col)
+		tok = NewTokenFromRune(COMMA, lx.c, lx.row)
 	case '"':
 		str, err := lx.readString()
 		if err != nil {
@@ -63,11 +62,10 @@ func (lx *Lexer) NextToken() Token {
 				ILLEGAL,
 				fmt.Sprintf("bad string: %s", err),
 				lx.row,
-				lx.col,
 			)
 			break
 		}
-		tok = NewTokenFromString(STRING, str, lx.row, lx.col)
+		tok = NewTokenFromString(STRING, str, lx.row)
 	case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 		num, err := lx.readNumber()
 		if err != nil {
@@ -75,21 +73,19 @@ func (lx *Lexer) NextToken() Token {
 				ILLEGAL,
 				fmt.Sprintf("bad number: %s", err),
 				lx.row,
-				lx.col,
 			)
 			break
 		}
-		tok = NewTokenFromString(NUM, num, lx.row, lx.col)
+		tok = NewTokenFromString(NUM, num, lx.row)
 	default:
 		if unicode.IsLetter(lx.c) || lx.c == '_' {
 			ident := lx.readIdentifier()
-			tok = NewTokenFromString(lookupIdentifier(ident), ident, lx.row, lx.col)
+			tok = NewTokenFromString(lookupIdentifier(ident), ident, lx.row)
 		} else {
 			tok = NewTokenFromString(
 				ILLEGAL,
 				fmt.Sprintf("unrecognised token: %v", string(lx.c)),
 				lx.row,
-				lx.col,
 			)
 		}
 	}
@@ -107,6 +103,20 @@ func (lx *Lexer) readRune() {
 	} else {
 		lx.col++
 	}
+}
+
+func (lx *Lexer) peek(num int) ([]rune, error) {
+	next, err := lx.src.Peek(num)
+	if err != nil && err != io.EOF {
+		return nil, err
+	}
+	runes := make([]rune, 0, num)
+
+	for _, n := range next {
+		runes = append(runes, rune(n))
+	}
+
+	return runes, err
 }
 
 func (lx *Lexer) skipWhitespace() {
@@ -135,26 +145,28 @@ func (lx *Lexer) readNumber() (string, error) {
 }
 
 func (lx *Lexer) readIntegralPart(buf *strings.Builder) error {
+	next, err := lx.peek(1)
 	if lx.c == '-' {
-		next, err := lx.src.Peek(1)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				return errors.New("truncated integral part")
 			}
 			return fmt.Errorf("readNumber - failed to peek after '-': %w", err)
 		}
-		if !unicode.IsDigit(rune(next[0])) {
+		if !unicode.IsDigit(next[0]) {
 			return fmt.Errorf("'-' must be followed by a digit")
 		}
-		buf.WriteRune(lx.c)
+	} else if lx.c == '0' && err != io.EOF && unicode.IsDigit(next[0]) {
+		return errors.New("numbers cannot lead with zero")
 	}
+	buf.WriteRune(lx.c)
 
 	lx.readDigits(buf)
 	return nil
 }
 
 func (lx *Lexer) readFractionalPart(buf *strings.Builder) error {
-	next, err := lx.src.Peek(2)
+	next, err := lx.peek(2)
 	if len(next) == 0 || next[0] != '.' {
 		return nil
 	}
@@ -164,7 +176,7 @@ func (lx *Lexer) readFractionalPart(buf *strings.Builder) error {
 		}
 		return fmt.Errorf("readNumber - failed to peek after '.': %w", err)
 	}
-	if !unicode.IsDigit(rune(next[1])) {
+	if !unicode.IsDigit(next[1]) {
 		return fmt.Errorf("'.' must be followed by a digit")
 	}
 	lx.readRune()
@@ -175,45 +187,51 @@ func (lx *Lexer) readFractionalPart(buf *strings.Builder) error {
 }
 
 func (lx *Lexer) readExponent(buf *strings.Builder) error {
-	next, err := lx.src.Peek(3)
-	if len(next) == 0 || (next[0] != 'e' && next[0] != 'E') {
+	next, err := lx.peek(3)
+	length := len(next)
+	switch {
+	// There is no exponential part
+	case length == 0, next[0] != 'e' && next[0] != 'E':
 		return nil
-	}
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			return errors.New("truncated exponent")
-		}
+	// We start the exponential part but don't have a value
+	case length == 1:
+		return errors.New("truncated exponent")
+	// Valid, unsigned exponetial part e.g. e2, E42, etc
+	case unicode.IsDigit(next[1]):
+		lx.readRune()
+		buf.WriteRune(lx.c)
+	// The 'e' is followed by an invalid character
+	case next[1] != '+' && next[1] != '-':
+		return errors.New("exponent must be followed by a sign or digit")
+	// We have a signed exponetial part (e.g. e+, e-) but either there is no
+	// numerical value after it
+	case length == 2 || !unicode.IsDigit(next[2]):
+		return errors.New("signed exponent must be followed by a digit")
+	case err != nil && err != io.EOF:
 		return fmt.Errorf(
-			"readNumber - failed to peek after '%c': %w",
+			"readExponent - failed to peek after '%c': %w",
 			lx.c,
 			err,
 		)
+	// Valid signed exponential part e.g. e+23, E-123
+	default:
+		lx.readRune()
+		buf.WriteRune(lx.c)
+		lx.readRune()
+		buf.WriteRune(lx.c)
 	}
-	sign, value := rune(next[1]), rune(next[2])
-	if sign != '+' && sign != '-' {
-		return errors.New("exponent must be followed by a sign")
-	}
-	if !unicode.IsDigit(value) {
-		return errors.New("exponent must have a value")
-	}
-	lx.readRune()
-	buf.WriteRune(lx.c)
-	lx.readRune()
-	buf.WriteRune(lx.c)
+
 	lx.readDigits(buf)
 
 	return nil
 }
 
 func (lx *Lexer) readDigits(buf *strings.Builder) {
-	if unicode.IsDigit(lx.c) {
-		buf.WriteRune(lx.c)
-	}
-	next, err := lx.src.Peek(1)
-	for !errors.Is(err, io.EOF) && unicode.IsDigit(rune(next[0])) {
+	next, err := lx.peek(1)
+	for !errors.Is(err, io.EOF) && unicode.IsDigit(next[0]) {
 		lx.readRune()
 		buf.WriteRune(lx.c)
-		next, err = lx.src.Peek(1)
+		next, err = lx.peek(1)
 	}
 }
 
@@ -238,11 +256,11 @@ func (lx *Lexer) readIdentifier() string {
 	var buf strings.Builder
 	buf.WriteRune(lx.c)
 
-	next, err := lx.src.Peek(1)
-	for !errors.Is(err, io.EOF) && unicode.IsLetter(rune(next[0])) || lx.c == '_' || unicode.IsDigit(lx.c) {
+	next, err := lx.peek(1)
+	for !errors.Is(err, io.EOF) && unicode.IsLetter(next[0]) || lx.c == '_' || unicode.IsDigit(lx.c) {
 		lx.readRune()
 		buf.WriteRune(lx.c)
-		next, err = lx.src.Peek(1)
+		next, err = lx.peek(1)
 	}
 
 	return buf.String()
