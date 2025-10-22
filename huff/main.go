@@ -1,7 +1,14 @@
 package main
 
-import "fmt"
+import (
+	"flag"
+	"fmt"
+)
 
 func main() {
-	fmt.Println("Hello huff")
+	infile := flag.String("i", "", "The file to encode")
+	outfile := flag.String("o", "", "The encoded file")
+	flag.Parse()
+
+	fmt.Printf("Compressing %s and writing output to %s\n", *infile, *outfile)
 }
