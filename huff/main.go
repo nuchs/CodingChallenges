@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"io"
@@ -20,7 +19,7 @@ func main() {
 	}
 	defer closeFile(file)
 
-	counts, err := MakeFrequencyTable(file)
+	counts, err := makeFrequencyTable(file)
 	if err != nil {
 		fmt.Fprintf(
 			os.Stderr,
@@ -39,24 +38,4 @@ func closeFile(file io.Closer) {
 	if err := file.Close(); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to close file: %s\n", err)
 	}
-}
-
-func MakeFrequencyTable(data io.Reader) (map[rune]int, error) {
-	counts := make(map[rune]int)
-	read := bufio.NewReader(data)
-	for {
-		r, _, err := read.ReadRune()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("Failed to generate frequency table: %w", err)
-		}
-		if _, ok := counts[r]; !ok {
-			counts[r] = 0
-		}
-		counts[r]++
-	}
-
-	return counts, nil
 }
