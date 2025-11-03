@@ -1,28 +1,70 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"slices"
+	"strings"
 )
 
-type prefix struct {
-	value int
-	len   int
+// Record how often a particular byte pattern occurs in the input
+type frequencyTable map[byte]int
+
+// Huffman encoding details for a specific byte pattern
+type entry struct {
+	value  byte   // The value being encoded
+	prefix uint16 // The prefix it is encoded to
+	len    byte   // The length of the prefix
+	freq   int    // How often the value occurred in the input
 }
 
-type prefixTable map[rune]prefix
+// The huffman encoding table for the input
+type encodeTable map[byte]entry
 
+func (et encodeTable) String() string {
+	es := et.sortTable()
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "  value  |      prefix      | len |  freq\n")
+	fmt.Fprintf(&sb, "------------------------------------------\n")
+	for _, e := range es {
+		fmt.Fprintf(
+			&sb,
+			"%08b | %*s%0*b | %3d | %5d\n",
+			e.value,
+			16-e.len,
+			" ",
+			e.len,
+			e.prefix,
+			e.len,
+			e.freq,
+		)
+	}
+	return sb.String()
+}
+
+func (et encodeTable) sortTable() []entry {
+	entries := make([]entry, 0, len(et))
+	for _, v := range et {
+		entries = append(entries, v)
+	}
+
+	slices.SortFunc(entries, func(a, b entry) int {
+		return int(a.len) - int(b.len)
+	})
+
+	return entries
+}
+
+// A node in a huffman tree
 type node struct {
-	weight      int
-	minSymbol   rune
-	isLeaf      bool
-	value       rune
-	left, right *node
+	weight      int   // The frequency of all the symbols in the subtree
+	minSymbol   byte  // The lexically smallest symbol in the subtree (used for sorting)
+	isLeaf      bool  // Is this node a leaf
+	value       byte  // For leaves, this is the symbol being encoded
+	left, right *node // For non leaves the left and right child nodes
 }
 
-func newLeaf(value rune, weight int) node {
+// Creates a new leaf node for the specified symbol
+func newLeaf(value byte, weight int) node {
 	return node{
 		weight:    weight,
 		minSymbol: value,
@@ -31,10 +73,11 @@ func newLeaf(value rune, weight int) node {
 	}
 }
 
+// Create a new internal node to be the parent of two existing nodes
 func newNode(a, b node) node {
 	left := a
 	right := b
-	if cmpNode(a, b) >= 0 {
+	if cmpNode(a, b) > 0 {
 		left = b
 		right = a
 	}
@@ -48,68 +91,40 @@ func newNode(a, b node) node {
 	}
 }
 
-func (n *node) toPrefixTable() prefixTable {
-	tab := make(map[rune]prefix)
-	var plen, pfx int
+// Convert a huffman tree to an encoding table
+func (n *node) toEncodeTable() encodeTable {
+	tab := encodeTable{}
+	var pLen byte
+	var pfx uint16
 
 	if n.isLeaf {
-		plen++
+		pLen++
 	}
 
-	fillPrefixes(n, tab, plen, pfx)
+	fillPrefixes(n, tab, pLen, pfx)
 
 	return tab
 }
 
-func fillPrefixes(n *node, tab map[rune]prefix, plen, pfx int) {
+func fillPrefixes(n *node, tab encodeTable, pLen byte, pfx uint16) {
 	if n == nil {
 		return
 	}
 	if n.isLeaf {
-		tab[n.value] = prefix{value: pfx, len: plen}
+		tab[n.value] = entry{value: n.value, prefix: pfx, len: pLen, freq: n.weight}
 		return
 	}
-	plen++
+	pLen++
 	left := pfx << 1
 	right := left + 1
-	fillPrefixes(n.left, tab, plen, left)
-	fillPrefixes(n.right, tab, plen, right)
+	fillPrefixes(n.left, tab, pLen, left)
+	fillPrefixes(n.right, tab, pLen, right)
 }
 
-func generateEncodingTable(data io.Reader) (prefixTable, error) {
-	freq, err := makeFrequencyTable(data)
-	if err != nil {
-		return nil, err
-	}
-	t := buildHuffmanTree(freq)
+func buildHuffmanTree(ft frequencyTable) node {
+	trees := make([]node, 0, len(ft))
 
-	return t.toPrefixTable(), nil
-}
-
-func makeFrequencyTable(data io.Reader) (map[rune]int, error) {
-	counts := make(map[rune]int)
-	read := bufio.NewReader(data)
-	for {
-		r, _, err := read.ReadRune()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate frequency table: %w", err)
-		}
-		if _, ok := counts[r]; !ok {
-			counts[r] = 0
-		}
-		counts[r]++
-	}
-
-	return counts, nil
-}
-
-func buildHuffmanTree(freq map[rune]int) node {
-	trees := make([]node, 0, len(freq))
-
-	for r, f := range freq {
+	for r, f := range ft {
 		trees = append(trees, newLeaf(r, f))
 	}
 
@@ -123,7 +138,7 @@ func buildHuffmanTree(freq map[rune]int) node {
 	return trees[0]
 }
 
-func minSymbol(a, b node) rune {
+func minSymbol(a, b node) byte {
 	if a.minSymbol == b.minSymbol {
 		panic(fmt.Sprintf(
 			"Two nodes should not contain same symbol: %v",
@@ -138,7 +153,26 @@ func minSymbol(a, b node) rune {
 
 func cmpNode(a, b node) int {
 	if a.weight == b.weight {
-		return int(a.minSymbol - b.minSymbol)
+		return int(a.minSymbol) - int(b.minSymbol)
 	}
 	return a.weight - b.weight
+}
+
+func generateEncodingTable(data []byte) encodeTable {
+	freq := makeFrequencyTable(data)
+	t := buildHuffmanTree(freq)
+
+	return t.toEncodeTable()
+}
+
+func makeFrequencyTable(data []byte) frequencyTable {
+	counts := frequencyTable{}
+	for _, b := range data {
+		if _, ok := counts[b]; !ok {
+			counts[b] = 0
+		}
+		counts[b]++
+	}
+
+	return counts
 }
