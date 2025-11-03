@@ -1,13 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"iter"
 )
 
-const chunkSize = 64 * 1024 * 1024
+const chunkSize = 64 * 1024
 
 // Huffman encode the input stream and write to the output stream
 func Encode(in io.Reader, out io.Writer) error {
@@ -34,7 +33,6 @@ func Encode(in io.Reader, out io.Writer) error {
 
 // Splits the input into chunks and prints the huffman encoding table for each
 func PrintHeaders(in io.Reader, out io.Writer) error {
-	buf := bufio.NewWriter(out)
 	var i int
 	for c, err := range chunks(in) {
 		if err != nil && err != io.EOF {
@@ -46,11 +44,12 @@ func PrintHeaders(in io.Reader, out io.Writer) error {
 
 		i++
 		et := generateEncodingTable(c)
-		_, err := fmt.Fprintf(buf, "Encoding Table for chunk %d\n%s\n", i, et)
+		_, err := fmt.Fprintf(out, "Encoding Table for chunk %d\n%s\n", i, et)
 		if err != nil {
 			return fmt.Errorf("writing header: %w", err)
 		}
 	}
+	fmt.Println()
 
 	return nil
 }
@@ -61,7 +60,10 @@ func chunks(in io.Reader) iter.Seq2[[]byte, error] {
 	return func(yield func([]byte, error) bool) {
 		for {
 			buf := make([]byte, chunkSize)
-			_, err := in.Read(buf)
+			n, err := in.Read(buf)
+			if n < chunkSize {
+				buf = buf[:n]
+			}
 			if !yield(buf, err) || err != nil {
 				break
 			}

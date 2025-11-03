@@ -6,6 +6,15 @@ import (
 	"strings"
 )
 
+func generateEncodingTable(data []byte) encodeTable {
+	freq := makeFrequencyTable(data)
+	t := buildHuffmanTree(freq)
+
+	return t.toEncodeTable()
+}
+
+const maxCodeLength = 16
+
 // Record how often a particular byte pattern occurs in the input
 type frequencyTable map[byte]int
 
@@ -30,7 +39,7 @@ func (et encodeTable) String() string {
 			&sb,
 			"%08b |%*s%0*b | %3d | %5d\n",
 			e.value,
-			17-e.len,
+			maxCodeLength-e.len+1,
 			" ",
 			e.len,
 			e.prefix,
@@ -159,13 +168,6 @@ func cmpNode(a, b node) int {
 		return int(a.minSymbol) - int(b.minSymbol)
 	}
 	return a.weight - b.weight
-}
-
-func generateEncodingTable(data []byte) encodeTable {
-	freq := makeFrequencyTable(data)
-	t := buildHuffmanTree(freq)
-
-	return t.toEncodeTable()
 }
 
 func makeFrequencyTable(data []byte) frequencyTable {
