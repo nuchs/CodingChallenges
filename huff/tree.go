@@ -28,9 +28,9 @@ func (et encodeTable) String() string {
 	for _, e := range es {
 		fmt.Fprintf(
 			&sb,
-			"%08b | %*s%0*b | %3d | %5d\n",
+			"%08b |%*s%0*b | %3d | %5d\n",
 			e.value,
-			16-e.len,
+			17-e.len,
 			" ",
 			e.len,
 			e.prefix,
@@ -48,6 +48,9 @@ func (et encodeTable) sortTable() []entry {
 	}
 
 	slices.SortFunc(entries, func(a, b entry) int {
+		if a.len == b.len {
+			return b.freq - a.freq
+		}
 		return int(a.len) - int(b.len)
 	})
 
