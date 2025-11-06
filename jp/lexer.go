@@ -241,8 +241,26 @@ func (lx *Lexer) readString() (string, error) {
 	esc := false
 
 	for esc || lx.c != '"' {
-		if lx.err != nil {
+		switch {
+		case lx.err != nil:
 			return "", errors.New("unterminated string")
+		case !esc && lx.c < 0x20:
+			return "", fmt.Errorf("control character 0x%x in stream", lx.c)
+		case esc && lx.c == 'u':
+			next, err := lx.peek(4)
+			if err != nil || !isHex(next) {
+				return "", errors.New("invalid unicode sequence")
+			}
+		case esc && lx.c == '"':
+		case esc && lx.c == 'b':
+		case esc && lx.c == 'f':
+		case esc && lx.c == 'n':
+		case esc && lx.c == 'r':
+		case esc && lx.c == 't':
+		case esc && lx.c == '\\':
+		case esc && lx.c == '/':
+		case esc:
+			return "", fmt.Errorf("invalid escape sequence: \\%c", lx.c)
 		}
 		buf.WriteRune(lx.c)
 		esc = !esc && lx.c == '\\'
@@ -250,6 +268,18 @@ func (lx *Lexer) readString() (string, error) {
 	}
 
 	return buf.String(), nil
+}
+
+func isHex(seq []rune) bool {
+	for _, r := range seq {
+		switch r {
+		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+		case 'a', 'A', 'b', 'B', 'c', 'C', 'd', 'D', 'e', 'E', 'f', 'F':
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 func (lx *Lexer) readIdentifier() string {
