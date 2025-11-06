@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -13,13 +15,14 @@ func FuzzKraftMcMillan(f *testing.F) {
 	f.Add([]byte("ab"))
 	f.Add([]byte("ba"))
 	f.Add([]byte("aabbcccc"))
+	f.Add([]byte("aabaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaeeaaaaadaaaaca"))
 
 	f.Fuzz(func(t *testing.T, bs []byte) {
 		if len(bs) == 0 {
 			t.Log("Skip empty slice")
 			return
 		}
-		et := generateEncodingTable(bs)
+		et := NewEncodingTable(bs)
 		sum := 0.0
 		for _, v := range et {
 			sum += math.Pow(2, -float64(v.len))
@@ -35,12 +38,13 @@ func FuzzDuplicateCodes(f *testing.F) {
 	f.Add([]byte("ba"))
 	f.Add([]byte("bac"))
 	f.Add([]byte("babcac"))
+	f.Add([]byte("abcdefghijklmnopqrstuvwxyz0123456789"))
 	f.Fuzz(func(t *testing.T, bs []byte) {
 		if len(bs) == 0 {
 			t.Log("Skip empty slice")
 			return
 		}
-		et := generateEncodingTable(bs)
+		et := NewEncodingTable(bs)
 		for _, b := range bs {
 			if _, ok := et[b]; !ok {
 				t.Fatalf(
@@ -63,7 +67,7 @@ func FuzzCodeLength(f *testing.F) {
 			t.Log("Skip empty slice")
 			return
 		}
-		et := generateEncodingTable(bs)
+		et := NewEncodingTable(bs)
 		entries := et.sortTable()
 		last := entries[0]
 		t.Log("\n" + et.String())
@@ -76,6 +80,31 @@ func FuzzCodeLength(f *testing.F) {
 				)
 			}
 			last = curr
+		}
+	})
+}
+
+func FuzzSharedPrefix(f *testing.F) {
+	f.Add([]byte("ab"))
+	f.Add([]byte("ba"))
+	f.Add([]byte("bac"))
+	f.Add([]byte("babcac"))
+	f.Add([]byte("abcdefghijklmnopqrstuvwxyz0123456789"))
+	f.Fuzz(func(t *testing.T, bs []byte) {
+		if len(bs) == 0 {
+			t.Log("Skip empty slice")
+			return
+		}
+		et := NewEncodingTable(bs)
+		entries := et.sortTable()
+		for i := 0; i < len(entries); i++ {
+			for j := i + 1; j < len(entries); j++ {
+				left := fmt.Sprintf("%0*b", entries[i].len, entries[i].prefix)
+				right := fmt.Sprintf("%0*b", entries[j].len, entries[j].prefix)
+				if strings.HasPrefix(right, left) {
+					t.Fatalf("Shared prefix: %+v - %+v", entries[i], entries[j])
+				}
+			}
 		}
 	})
 }

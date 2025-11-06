@@ -3,68 +3,7 @@ package main
 import (
 	"fmt"
 	"slices"
-	"strings"
 )
-
-func generateEncodingTable(data []byte) encodeTable {
-	freq := makeFrequencyTable(data)
-	t := buildHuffmanTree(freq)
-
-	return t.toEncodeTable()
-}
-
-const maxCodeLength = 16
-
-// Record how often a particular byte pattern occurs in the input
-type frequencyTable map[byte]int
-
-// Huffman encoding details for a specific byte pattern
-type entry struct {
-	value  byte   // The value being encoded
-	prefix uint16 // The prefix it is encoded to
-	len    byte   // The length of the prefix
-	freq   int    // How often the value occurred in the input
-}
-
-// The huffman encoding table for the input
-type encodeTable map[byte]entry
-
-func (et encodeTable) String() string {
-	es := et.sortTable()
-	var sb strings.Builder
-	fmt.Fprintf(&sb, "  value  |      prefix      | len |  freq\n")
-	fmt.Fprintf(&sb, "------------------------------------------\n")
-	for _, e := range es {
-		fmt.Fprintf(
-			&sb,
-			"%08b |%*s%0*b | %3d | %5d\n",
-			e.value,
-			maxCodeLength-e.len+1,
-			" ",
-			e.len,
-			e.prefix,
-			e.len,
-			e.freq,
-		)
-	}
-	return sb.String()
-}
-
-func (et encodeTable) sortTable() []entry {
-	entries := make([]entry, 0, len(et))
-	for _, v := range et {
-		entries = append(entries, v)
-	}
-
-	slices.SortFunc(entries, func(a, b entry) int {
-		if a.len == b.len {
-			return b.freq - a.freq
-		}
-		return int(a.len) - int(b.len)
-	})
-
-	return entries
-}
 
 // A node in a huffman tree
 type node struct {
@@ -103,37 +42,7 @@ func newNode(a, b node) node {
 	}
 }
 
-// Convert a huffman tree to an encoding table
-func (n *node) toEncodeTable() encodeTable {
-	tab := encodeTable{}
-	var pLen byte
-	var pfx uint16
-
-	if n.isLeaf {
-		pLen++
-	}
-
-	fillPrefixes(n, tab, pLen, pfx)
-
-	return tab
-}
-
-func fillPrefixes(n *node, tab encodeTable, pLen byte, pfx uint16) {
-	if n == nil {
-		return
-	}
-	if n.isLeaf {
-		tab[n.value] = entry{value: n.value, prefix: pfx, len: pLen, freq: n.weight}
-		return
-	}
-	pLen++
-	left := pfx << 1
-	right := left + 1
-	fillPrefixes(n.left, tab, pLen, left)
-	fillPrefixes(n.right, tab, pLen, right)
-}
-
-func buildHuffmanTree(ft frequencyTable) node {
+func newHuffmanTree(ft frequencyTable) node {
 	trees := make([]node, 0, len(ft))
 
 	for r, f := range ft {
@@ -168,16 +77,4 @@ func cmpNode(a, b node) int {
 		return int(a.minSymbol) - int(b.minSymbol)
 	}
 	return a.weight - b.weight
-}
-
-func makeFrequencyTable(data []byte) frequencyTable {
-	counts := frequencyTable{}
-	for _, b := range data {
-		if _, ok := counts[b]; !ok {
-			counts[b] = 0
-		}
-		counts[b]++
-	}
-
-	return counts
 }

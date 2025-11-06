@@ -43,7 +43,7 @@ func PrintHeaders(in io.Reader, out io.Writer) error {
 		}
 
 		i++
-		et := generateEncodingTable(c)
+		et := NewEncodingTable(c)
 		_, err := fmt.Fprintf(out, "Encoding Table for chunk %d\n%s\n", i, et)
 		if err != nil {
 			return fmt.Errorf("writing header: %w", err)
@@ -72,7 +72,7 @@ func chunks(in io.Reader) iter.Seq2[[]byte, error] {
 }
 
 func encodeChunk(in []byte) []byte {
-	et := generateEncodingTable(in)
+	et := NewEncodingTable(in)
 	out := make([]byte, 0, 1)
 	writeHeader(out, et)
 	writeData(in, out, et)
