@@ -23,10 +23,7 @@ func NewEncodingTable(data []byte) encodeTable {
 	freq := newFrequencyTable(data)
 	ht := newHuffmanTree(freq)
 	entries, lens := generateEntries(&ht)
-
-	if lens[maxCodeLength+1] > 0 {
-		entries = capLengths(entries, lens)
-	}
+	entries = capLengths(entries, lens)
 
 	return assignCodes(entries)
 }
@@ -58,6 +55,11 @@ func (et encodeTable) sortTable() []entry {
 		entries = append(entries, v)
 	}
 
+	sortEntries(entries)
+	return entries
+}
+
+func sortEntries(entries []entry) {
 	slices.SortFunc(entries, func(a, b entry) int {
 		if a.len != b.len {
 			return int(a.len) - int(b.len)
@@ -67,8 +69,6 @@ func (et encodeTable) sortTable() []entry {
 		}
 		return int(a.value) - int(b.value)
 	})
-
-	return entries
 }
 
 func generateEntries(ht *node) ([]entry, []int) {
@@ -96,6 +96,7 @@ func generateEntries(ht *node) ([]entry, []int) {
 		}
 	}
 	dfs(0, ht)
+	sortEntries(entries)
 
 	return entries, lens
 }

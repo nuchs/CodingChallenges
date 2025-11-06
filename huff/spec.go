@@ -12,6 +12,7 @@ type Action int
 
 const (
 	NotSet Action = iota
+
 	// Generate the encoding table for a file and print it
 	Printing
 
