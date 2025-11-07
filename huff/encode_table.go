@@ -23,7 +23,7 @@ func NewEncodingTable(data []byte) encodeTable {
 	freq := newFrequencyTable(data)
 	ht := newHuffmanTree(freq)
 	entries, lens := generateEntries(&ht)
-	entries = capLengths(entries, lens)
+	capLengths(entries, lens)
 
 	return assignCodes(entries)
 }
@@ -71,9 +71,9 @@ func sortEntries(entries []entry) {
 	})
 }
 
-func generateEntries(ht *node) ([]entry, []int) {
+func generateEntries(ht *node) ([]entry, []byte) {
 	entries := make([]entry, 0, 256)
-	lens := make([]int, maxCodeLength+2) // 1 based array, + 1 for overflow
+	lens := make([]byte, maxCodeLength+2) // 1 based array, + 1 for overflow
 
 	var dfs func(d byte, n *node)
 	dfs = func(d byte, n *node) {
@@ -101,8 +101,11 @@ func generateEntries(ht *node) ([]entry, []int) {
 	return entries, lens
 }
 
-func capLengths(entries []entry, lens []int) []entry {
+func capLengths(entries []entry, lens []byte) {
 	over := lens[maxCodeLength+1]
+	if over == 0 {
+		return
+	}
 	for i := maxCodeLength - 1; i > 0; i-- {
 		if over == 0 {
 			break
@@ -117,7 +120,14 @@ func capLengths(entries []entry, lens []int) []entry {
 		i = min(i+1, maxCodeLength-1)
 
 	}
-	return entries
+
+	var curr int
+	for i := 1; i < maxCodeLength+1; i++ {
+		for j := lens[i]; j > 0; j-- {
+			entries[curr].len = byte(i)
+			curr++
+		}
+	}
 }
 
 func assignCodes(entries []entry) encodeTable {
