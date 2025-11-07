@@ -71,9 +71,9 @@ func sortEntries(entries []entry) {
 	})
 }
 
-func generateEntries(ht *node) ([]entry, []byte) {
+func generateEntries(ht *node) ([]entry, []int) {
 	entries := make([]entry, 0, 256)
-	lens := make([]byte, maxCodeLength+2) // 1 based array, + 1 for overflow
+	lens := make([]int, maxCodeLength+2) // 1 based array, + 1 for overflow
 
 	var dfs func(d byte, n *node)
 	dfs = func(d byte, n *node) {
@@ -101,7 +101,7 @@ func generateEntries(ht *node) ([]entry, []byte) {
 	return entries, lens
 }
 
-func capLengths(entries []entry, lens []byte) {
+func capLengths(entries []entry, lens []int) {
 	over := lens[maxCodeLength+1]
 	if over == 0 {
 		return
