@@ -1,3 +1,5 @@
+// A program for generating length limited huffman codes for an input and using
+// them to encode an output, can also be used to decode the files after
 package main
 
 import (
