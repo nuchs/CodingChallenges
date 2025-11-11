@@ -73,15 +73,29 @@ func chunks(in io.Reader) iter.Seq2[[]byte, error] {
 
 func encodeChunk(in []byte) []byte {
 	et := NewEncodingTable(in)
-	out := make([]byte, 0, 1)
+	out := make([]byte, 0, len(in))
 	writeHeader(out, et)
-	writeData(in, out, et)
-
-	return out
+	return writeData(in, out, et)
 }
 
 func writeHeader(out []byte, et encodeTable) {
+	size := uint16(2 + 4*len(et))
+	out = append(out, byte(size>>8))
+	out = append(out, byte(0x00FF&size))
+
+	for _, e := range et {
+		out = append(out, e.value)
+		out = append(out, e.len)
+		out = append(out, byte(e.prefix>>8))
+		out = append(out, byte(0x00FF&e.prefix))
+	}
 }
 
-func writeData(in, out []byte, et encodeTable) {
+func writeData(in, out []byte, et encodeTable) []byte {
+	bb := newShortBuffer(out)
+	for _, c := range in {
+		e := et[c]
+		bb.write(e.prefix, e.len)
+	}
+	return bb.close()
 }

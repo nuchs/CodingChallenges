@@ -11,8 +11,8 @@ const maxCodeLength = 16
 // Huffman encoding details for a specific byte pattern
 type entry struct {
 	value  byte   // The value being encoded
-	prefix uint16 // The prefix it is encoded to
 	len    byte   // The length of the prefix
+	prefix uint16 // The prefix it is encoded to
 	freq   int    // How often the value occurred in the input
 }
 
