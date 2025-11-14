@@ -15,9 +15,9 @@ func TestFlags(t *testing.T) {
 		want hf.Spec
 	}{
 		{
-			desc: "Print header",
-			args: []string{"-a", "p", "-i", "someFile.txt"},
-			want: hf.Spec{Action: hf.Printing, In: "someFile.txt"},
+			desc: "Print encode header",
+			args: []string{"-a", "ep", "-i", "someFile.txt"},
+			want: hf.Spec{Action: hf.EncodePrint, In: "someFile.txt"},
 		},
 		{
 			desc: "Encode file",
@@ -50,15 +50,24 @@ func TestFlagErrors(t *testing.T) {
 		err  error
 	}{
 		{desc: "No action", args: []string{"-i", "in"}, err: hf.ErrActionNotSet},
-		{desc: "Print no src", args: []string{"-a", "p"}, err: hf.ErrNoInputFile},
+		{
+			desc: "Encode Print no src",
+			args: []string{"-a", "ep"},
+			err:  hf.ErrNoInputFile,
+		},
 		{
 			desc: "Encode no src",
-			args: []string{"-a", "p", "-o", "out"},
+			args: []string{"-a", "e", "-o", "out"},
+			err:  hf.ErrNoInputFile,
+		},
+		{
+			desc: "Decode Print no src",
+			args: []string{"-a", "dp"},
 			err:  hf.ErrNoInputFile,
 		},
 		{
 			desc: "Decode no src",
-			args: []string{"-a", "p", "-o", "out"},
+			args: []string{"-a", "d", "-o", "out"},
 			err:  hf.ErrNoInputFile,
 		},
 		{
