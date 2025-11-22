@@ -11,6 +11,8 @@ Specifically
 
 1. Build a wc clone (solution in wc)
 2. Build a JSON parser which can be used to validate JSON (solution in jp)
+3. Build an implementation of a huffman encoder (solution in huff)
+4. Build a cut clone (solution in cut)
 
 ## Code reviews
 
