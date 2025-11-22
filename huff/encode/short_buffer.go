@@ -1,28 +1,28 @@
-package main
+package encode
 
-const BufLen = 16
+const bufLen = 16
 
-type ShortBuffer struct {
+type shortBuffer struct {
 	buf uint16
 	len byte
 	out []byte
 }
 
-func newShortBuffer(out []byte) *ShortBuffer {
-	return &ShortBuffer{out: out}
+func newShortBuffer(out []byte) *shortBuffer {
+	return &shortBuffer{out: out}
 }
 
-func (bb *ShortBuffer) write(val uint16, vlen byte) {
+func (bb *shortBuffer) write(val uint16, vlen byte) {
 	shift := vlen
 	var rem byte
-	if shift+bb.len > BufLen {
-		shift = BufLen - bb.len
+	if shift+bb.len > bufLen {
+		shift = bufLen - bb.len
 		rem = vlen - shift
 	}
 	bb.buf = (bb.buf << shift) + (val >> rem)
 	bb.len += shift
 
-	if bb.len != BufLen {
+	if bb.len != bufLen {
 		return
 	}
 	bb.out = append(bb.out, byte(bb.buf>>8))
@@ -31,7 +31,7 @@ func (bb *ShortBuffer) write(val uint16, vlen byte) {
 	bb.buf = val & bitmask(rem)
 }
 
-func (bb *ShortBuffer) close() []byte {
+func (bb *shortBuffer) close() []byte {
 	shift := bb.flush()
 	padding := shift % 8
 	bb.out = append(bb.out, padding)
@@ -39,11 +39,11 @@ func (bb *ShortBuffer) close() []byte {
 	return bb.out
 }
 
-func (bb *ShortBuffer) flush() byte {
+func (bb *shortBuffer) flush() byte {
 	if bb.len == 0 {
 		return 0
 	}
-	shift := BufLen - bb.len
+	shift := bufLen - bb.len
 	bb.buf <<= shift
 	bb.out = append(bb.out, byte(bb.buf>>8))
 	if bb.len > 8 {

@@ -1,4 +1,4 @@
-package main
+package encode
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ type entry struct {
 // The huffman encoding table for the input
 type encodeTable map[byte]entry
 
-func NewEncodingTable(data []byte) encodeTable {
+func newEncodingTable(data []byte) encodeTable {
 	freq := newFrequencyTable(data)
 	ht := newHuffmanTree(freq)
 	entries, lens := generateEntries(&ht)

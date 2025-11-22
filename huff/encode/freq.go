@@ -1,4 +1,4 @@
-package main
+package encode
 
 type frequencyTable map[byte]int
 

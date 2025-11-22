@@ -1,4 +1,4 @@
-package main
+package encode
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ func Encode(in io.Reader, out io.Writer) error {
 }
 
 // Splits the input into chunks and prints the huffman encoding table for each
-func PrintHeaders(in io.Reader, out io.Writer) error {
+func PrintEncodeTable(in io.Reader, out io.Writer) error {
 	var i int
 	for c, err := range chunks(in) {
 		if err != nil && err != io.EOF {
@@ -43,13 +43,13 @@ func PrintHeaders(in io.Reader, out io.Writer) error {
 		}
 
 		i++
-		et := NewEncodingTable(c)
+		et := newEncodingTable(c)
 		_, err := fmt.Fprintf(out, "Encoding Table for chunk %d\n%s\n", i, et)
 		if err != nil {
 			return fmt.Errorf("writing header: %w", err)
 		}
 	}
-	fmt.Println()
+	fmt.Fprintln(out)
 
 	return nil
 }
@@ -72,16 +72,22 @@ func chunks(in io.Reader) iter.Seq2[[]byte, error] {
 }
 
 func encodeChunk(in []byte) []byte {
-	et := NewEncodingTable(in)
-	out := make([]byte, 0, len(in))
+	et := newEncodingTable(in)
+	out := make([]byte, 2, len(in)) // first two bytes are to record chunk size
 	out = writeHeader(out, et)
-	return writeData(in, out, et)
+	out = writeData(in, out, et)
+
+	size := uint16(len(out))
+	out[0] = byte(size >> 8)
+	out[1] = byte(0x00FF & size)
+
+	return out
 }
 
 func writeHeader(out []byte, et encodeTable) []byte {
-	size := uint16(2 + 4*len(et))
-	out = append(out, byte(size>>8))
-	out = append(out, byte(0x00FF&size))
+	headerSize := uint16(2 + 4*len(et))
+	out = append(out, byte(headerSize>>8))
+	out = append(out, byte(0x00FF&headerSize))
 
 	for _, e := range et {
 		out = append(out, e.value)
