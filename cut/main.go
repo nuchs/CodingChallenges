@@ -20,7 +20,10 @@ func main() {
 	}
 	defer CloseStream(in)
 
-	fmt.Println(cfg)
+	if err := Cut(in, os.Stdout, cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to cut data: %s\n", err)
+		os.Exit(3)
+	}
 }
 
 func openInputStream(path string) (io.ReadCloser, error) {

@@ -1,18 +1,22 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"strings"
 )
 
+var ErrBadSelector = errors.New("you must provide a field selector > 0")
+
 type Config struct {
-	Field int
-	In    string // '-' is for stdin
+	Delimiter string
+	Field     int
+	In        string // '-' is for stdin
 }
 
 func NewConfig(args []string) (Config, error) {
-	cfg := Config{In: "-"}
+	cfg := Config{In: "-", Delimiter: "\t"}
 	var sb strings.Builder
 	fs := flag.NewFlagSet("cut", flag.ContinueOnError)
 	fs.SetOutput(&sb)
@@ -30,6 +34,9 @@ func NewConfig(args []string) (Config, error) {
 
 	if err := fs.Parse(args); err != nil {
 		return cfg, fmt.Errorf("parsing command line: %w", err)
+	}
+	if cfg.Field == 0 {
+		return cfg, ErrBadSelector
 	}
 
 	tail := fs.Args()

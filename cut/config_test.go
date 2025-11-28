@@ -1,42 +1,73 @@
 package main_test
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
-	cut "github.com/nuchs/cc/cut"
+	cc "github.com/nuchs/cc/cut"
 )
 
 func TestConfig(t *testing.T) {
 	testCases := []struct {
 		desc string
 		args []string
-		want cut.Config
+		want cc.Config
 	}{
 		{
 			desc: "Default input from stdin",
-			args: []string{},
-			want: cut.Config{Field: 0, In: "-"},
+			args: []string{"-f", "1"},
+			want: cc.Config{Field: 1, In: "-", Delimiter: "\t"},
 		},
 		{
 			desc: "Input from file",
-			args: []string{"main.go"},
-			want: cut.Config{Field: 0, In: "main.go"},
+			args: []string{"-f", "1", "main.go"},
+			want: cc.Config{Field: 1, In: "main.go", Delimiter: "\t"},
 		},
 		{
 			desc: "field selected",
 			args: []string{"-f", "7"},
-			want: cut.Config{Field: 7, In: "-"},
+			want: cc.Config{Field: 7, In: "-", Delimiter: "\t"},
 		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			got, err := cut.NewConfig(tC.args)
+			got, err := cc.NewConfig(tC.args)
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
 			}
 			if !reflect.DeepEqual(got, tC.want) {
 				t.Fatalf("Wrong config: got %+v, want %+v", got, tC.want)
+			}
+		})
+	}
+}
+
+func TestBadConfig(t *testing.T) {
+	testCases := []struct {
+		desc string
+		args []string
+		want error
+	}{
+		{
+			desc: "No field",
+			args: []string{},
+			want: cc.ErrBadSelector,
+		},
+		{
+			desc: "invalid field",
+			args: []string{"-f", "0"},
+			want: cc.ErrBadSelector,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			_, err := cc.NewConfig(tC.args)
+			if err == nil {
+				t.Fatal("Expected error, got nil")
+			}
+			if !errors.Is(err, cc.ErrBadSelector) {
+				t.Fatalf("Wrong error - got %q, want %q", err, cc.ErrBadSelector)
 			}
 		})
 	}
