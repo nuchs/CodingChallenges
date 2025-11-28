@@ -25,9 +25,14 @@ func TestConfig(t *testing.T) {
 			want: cc.Config{Field: 1, In: "main.go", Delimiter: "\t"},
 		},
 		{
-			desc: "field selected",
+			desc: "field selection",
 			args: []string{"-f", "7"},
 			want: cc.Config{Field: 7, In: "-", Delimiter: "\t"},
+		},
+		{
+			desc: "delimiter",
+			args: []string{"-f", "1", "-d", ","},
+			want: cc.Config{Field: 1, In: "-", Delimiter: ","},
 		},
 	}
 	for _, tC := range testCases {

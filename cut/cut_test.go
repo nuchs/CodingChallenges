@@ -28,8 +28,8 @@ func TestCut(t *testing.T) {
 		},
 		{
 			desc: "Cuts are done linewise",
-			cfg:  cc.Config{Field: 2, Delimiter: "\t"},
-			in:   "111\t222\n111\t222\n111\t",
+			cfg:  cc.Config{Field: 2, Delimiter: ","},
+			in:   "111,222\n111,222\n111,",
 			want: "222\n222\n\n",
 		},
 	}
@@ -37,7 +37,11 @@ func TestCut(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			var out strings.Builder
 			in := strings.NewReader(tC.in)
-			cc.Cut(in, &out, tC.cfg)
+
+			err := cc.Cut(in, &out, tC.cfg)
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
 			got := out.String()
 			if got != tC.want {
 				t.Fatalf("Bad cut - got: %q, want: %q", got, tC.want)

@@ -16,7 +16,7 @@ type Config struct {
 }
 
 func NewConfig(args []string) (Config, error) {
-	cfg := Config{In: "-", Delimiter: "\t"}
+	cfg := Config{In: "-"}
 	var sb strings.Builder
 	fs := flag.NewFlagSet("cut", flag.ContinueOnError)
 	fs.SetOutput(&sb)
@@ -31,6 +31,7 @@ func NewConfig(args []string) (Config, error) {
 		0,
 		"Fields to select, can be a comma separated list or a range",
 	)
+	fs.StringVar(&cfg.Delimiter, "d", "\t", "Field delimiter")
 
 	if err := fs.Parse(args); err != nil {
 		return cfg, fmt.Errorf("parsing command line: %w", err)
