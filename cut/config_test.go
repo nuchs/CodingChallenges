@@ -17,22 +17,36 @@ func TestConfig(t *testing.T) {
 		{
 			desc: "Default input from stdin",
 			args: []string{"-f", "1"},
-			want: cc.Config{Field: 1, In: "-", Delimiter: "\t"},
+			want: cc.Config{
+				In: "-", Spread: cc.Spreads{{Min: 1, Max: 1}}, Delimiter: "\t",
+			},
 		},
 		{
 			desc: "Input from file",
 			args: []string{"-f", "1", "main.go"},
-			want: cc.Config{Field: 1, In: "main.go", Delimiter: "\t"},
+			want: cc.Config{
+				In:        "main.go",
+				Spread:    cc.Spreads{{Min: 1, Max: 1}},
+				Delimiter: "\t",
+			},
 		},
 		{
 			desc: "field selection",
 			args: []string{"-f", "7"},
-			want: cc.Config{Field: 7, In: "-", Delimiter: "\t"},
+			want: cc.Config{
+				In:        "-",
+				Spread:    cc.Spreads{{Min: 7, Max: 7}},
+				Delimiter: "\t",
+			},
 		},
 		{
 			desc: "delimiter",
 			args: []string{"-f", "1", "-d", ","},
-			want: cc.Config{Field: 1, In: "-", Delimiter: ","},
+			want: cc.Config{
+				In:        "-",
+				Spread:    cc.Spreads{{Min: 1, Max: 1}},
+				Delimiter: ",",
+			},
 		},
 	}
 	for _, tC := range testCases {
@@ -60,9 +74,29 @@ func TestBadConfig(t *testing.T) {
 			want: cc.ErrBadSelector,
 		},
 		{
-			desc: "invalid field",
+			desc: "zero isn't a valid field",
 			args: []string{"-f", "0"},
-			want: cc.ErrBadSelector,
+			want: cc.ErrZeroSpreadBound,
+		},
+		{
+			desc: "bad field spec",
+			args: []string{"-f", "1-2-3"},
+			want: cc.ErrBadlyFormattedSpread,
+		},
+		{
+			desc: "Non numeric lower bound",
+			args: []string{"-f", "a-3"},
+			want: cc.ErrNonNumericSpreadBound,
+		},
+		{
+			desc: "Non numeric upper bound",
+			args: []string{"-f", "1-x"},
+			want: cc.ErrNonNumericSpreadBound,
+		},
+		{
+			desc: "upper bound greater than lower",
+			args: []string{"-f", "2-1"},
+			want: cc.ErrBadSpreadOrder,
 		},
 	}
 	for _, tC := range testCases {
@@ -71,7 +105,7 @@ func TestBadConfig(t *testing.T) {
 			if err == nil {
 				t.Fatal("Expected error, got nil")
 			}
-			if !errors.Is(err, cc.ErrBadSelector) {
+			if !errors.Is(err, tC.want) {
 				t.Fatalf("Wrong error - got %q, want %q", err, cc.ErrBadSelector)
 			}
 		})

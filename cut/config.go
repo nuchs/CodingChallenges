@@ -7,11 +7,11 @@ import (
 	"strings"
 )
 
-var ErrBadSelector = errors.New("you must provide a field selector > 0")
+var ErrBadSelector = errors.New("you must provide a field selector")
 
 type Config struct {
 	Delimiter string
-	Field     int
+	Spread    Spreads
 	In        string // '-' is for stdin
 }
 
@@ -25,10 +25,9 @@ func NewConfig(args []string) (Config, error) {
 		fs.PrintDefaults()
 	}
 
-	fs.IntVar(
-		&cfg.Field,
+	rStr := fs.String(
 		"f",
-		0,
+		"",
 		"Fields to select, can be a comma separated list or a range",
 	)
 	fs.StringVar(&cfg.Delimiter, "d", "\t", "Field delimiter")
@@ -36,9 +35,14 @@ func NewConfig(args []string) (Config, error) {
 	if err := fs.Parse(args); err != nil {
 		return cfg, fmt.Errorf("parsing command line: %w", err)
 	}
-	if cfg.Field == 0 {
+	if *rStr == "" {
 		return cfg, ErrBadSelector
 	}
+	r, err := NewSpreads(*rStr)
+	if err != nil {
+		return cfg, err
+	}
+	cfg.Spread = r
 
 	tail := fs.Args()
 	if len(tail) > 0 {

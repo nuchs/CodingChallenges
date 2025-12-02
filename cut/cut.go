@@ -29,14 +29,21 @@ func Cut(in io.Reader, out io.Writer, cfg Config) error {
 
 func applyCuts(cfg Config, line string) string {
 	parts := strings.Split(line, cfg.Delimiter)
-
 	if len(parts) == 1 {
 		return parts[0]
 	}
-	if cfg.Field > len(parts) {
+
+	var trim []string
+	for i := 1; i <= len(parts); i++ {
+		if cfg.Spread.Includes(i) {
+			trim = append(trim, parts[i-1])
+		}
+	}
+
+	if len(trim) == 0 {
 		return ""
 	}
-	return parts[cfg.Field-1]
+	return strings.Join(trim, cfg.Delimiter)
 }
 
 func flushBuffer(buf *bufio.Writer) {
