@@ -1,0 +1,40 @@
+services:
+  lb:
+    build:
+      context: .
+      dockerfile: Dockerfile.lb
+    container_name: lb
+    command: ["-p", "80", "http://be-1", "http://be-2", "http://be-3"]
+    ports:
+      - "8080:80"
+    depends_on:
+      - be1
+      - be2
+      - be3
+
+  be1:
+    build:
+      context: .
+      dockerfile: Dockerfile.be
+    container_name: be-1
+    command: ["-p", "80", "-n", "be-1"]
+    ports:
+      - "8081:80"
+
+  be2:
+    build:
+      context: .
+      dockerfile: Dockerfile.be
+    container_name: be-2
+    command: ["-p", "80", "-n", "be-2"]
+    ports:
+      - "8082:80"
+
+  be3:
+    build:
+      context: .
+      dockerfile: Dockerfile.be
+    container_name: be-3
+    command: ["-p", "80", "-n", "be-3"]
+    ports:
+      - "8083:80"
