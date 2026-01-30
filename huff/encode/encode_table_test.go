@@ -1,4 +1,4 @@
-package main
+package encode
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ func FuzzKraftMcMillan(f *testing.F) {
 			t.Log("Skip empty slice")
 			return
 		}
-		et := NewEncodingTable(bs)
+		et := newEncodingTable(bs)
 		sum := 0.0
 		for _, v := range et {
 			sum += math.Pow(2, -float64(v.len))
@@ -44,7 +44,7 @@ func FuzzDuplicateCodes(f *testing.F) {
 			t.Log("Skip empty slice")
 			return
 		}
-		et := NewEncodingTable(bs)
+		et := newEncodingTable(bs)
 		for _, b := range bs {
 			if _, ok := et[b]; !ok {
 				t.Fatalf(
@@ -67,7 +67,7 @@ func FuzzCodeLength(f *testing.F) {
 			t.Log("Skip empty slice")
 			return
 		}
-		et := NewEncodingTable(bs)
+		et := newEncodingTable(bs)
 		entries := et.sortTable()
 		last := entries[0]
 		t.Log("\n" + et.String())
@@ -95,7 +95,7 @@ func FuzzSharedPrefix(f *testing.F) {
 			t.Log("Skip empty slice")
 			return
 		}
-		et := NewEncodingTable(bs)
+		et := newEncodingTable(bs)
 		entries := et.sortTable()
 		for i := 0; i < len(entries); i++ {
 			for j := i + 1; j < len(entries); j++ {

@@ -14,10 +14,13 @@ const (
 	NotSet Action = iota
 
 	// Generate the encoding table for a file and print it
-	Printing
+	EncodePrint
 
 	// Huffman encode a file
 	Encoding
+
+	// Read the encoding table from a file and print it
+	DecodePrint
 
 	// Decode a huffman encoded file
 	Decoding
@@ -27,10 +30,12 @@ func (a Action) String() string {
 	switch a {
 	case NotSet:
 		return "Not set"
-	case Printing:
-		return "Print"
+	case EncodePrint:
+		return "Encoding Print"
 	case Encoding:
 		return "Encode"
+	case DecodePrint:
+		return "Decoding Print"
 	case Decoding:
 		return "Decode"
 	default:
@@ -88,7 +93,7 @@ func validateArgs(
 	if spec.In == "" {
 		return ErrNoInputFile
 	}
-	if spec.Out == "" && spec.Action != Printing {
+	if spec.Out == "" && spec.Action != EncodePrint {
 		return ErrNoOutputFile
 	}
 	return nil
@@ -102,13 +107,15 @@ func configureParser(usage *strings.Builder, spec *Spec) *flag.FlagSet {
 	parser.StringVar(&spec.Out, "o", "", "File to write output to")
 	parser.Func(
 		"a",
-		"action to perform <p|e|d> (print header/encode/decode)",
+		"action to perform <e|ep|d|dp> (print header/encode/decode)",
 		func(a string) error {
 			switch a {
-			case "p":
-				spec.Action = Printing
+			case "ep":
+				spec.Action = EncodePrint
 			case "e":
 				spec.Action = Encoding
+			case "dp":
+				spec.Action = DecodePrint
 			case "d":
 				spec.Action = Decoding
 			default:
